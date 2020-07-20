@@ -1,0 +1,130 @@
+Vue两大核心思想：组件化和数据驱动。组件化：把整体拆分为各个可以复用的个体，数据驱动：通过数据变化直接影响bom展示，避免dom操作
+
+在main中加载的插件比如router,store,可以在组件中通过this.$router,this。$store取到，
+注意$router，$store并不是内置对象，而是mian中加载的模块对象自定义名称对象
+
+
+1.搜索时改变变量值会自动调用方法吗？
+<li v-for="item in filterBy(list,msg)" :key="item.index">
+    返回数据的方法是在循环的时候调用，里面的参数包含了组件的变量，这个参数也与input进行了绑定，当input值改变时会重新调用循环数据的方法
+    可以理解为数据源是一个对象，当参数改变之后，数据源就改变了，由于数据双向绑定的关系，循环就会重新渲染
+2.组件传值？
+    父组件向子组件传值:  子组件定义一个属性 props['msg']  {{msg}}
+                        父组件在加载子组件是可以添加一个根属性 <son msg="传递的内容"></son>
+    子组件向父组件传值:  一般情况下子组件是不能向父组件传值的，组件传值是单向通信，只有父组件向子组件传值，不过可以借助$emit实现
+                        子向父传递值
+                  用法: 在子组件中使用$emit('fun'，[...arg]) 第一个参数为自定义指令，第二个为传递的数据
+                        在父组件中给调用的子组件添加根属性@fun='getData',
+                        @fun是$emit定义的指令,getData是父组件中定义的方法，方法的参数就是$emit的传递的数据
+3.路由传参？
+    第一种: ：to="/path?params=/+val"  接收this.$router.query.params
+    第二种: ：to="/path/params" 需要在route.js中设置 如{path:'/test/:id'} 接收this.$route.params.id
+    第三种: ：to="{path: '/exhibition', query: {img:item}}"  接收this.$route.params.img
+
+    注意$router与$route的区别
+4.vuex的使用
+
+    state:单一状态树，作为vuex中唯一数据源,每个vue应用只有一个store实例，可以通过this.$store.state获取数据源
+            state:{
+                key:val    //this.$store.state.key
+            }
+
+    mutation:更改vuex中state状态的唯一方法
+            mutations:{
+                increment: state => state.key++ //state就是数据源，这里可以随意命名
+            }
+            要触发上述事件需要使用commit，比如this.$store.commit('increment',params)，params是需要传递的值，也可以是对象 可选参数
+            commit有多重书写风格 具体看官方文档
+
+    getter: 可以认为是 store 的计算属性 具有缓存功能 但是如果是通过方法调用则不具有缓存功能
+             getters: {
+                    doneTodos: state => {
+                        return state.count>3?20:10
+                    },
+                    doneTodosCount: (state, getters) => {//可以提供其他getters作为第二个参数
+                        return getters.doneTodos.length
+                      },
+                    getTodoById: (state) => (id) => {//接收传递的参数id //this.$store.getters.getTodoById(2)
+                        return state.todos.find(todo => todo.id === id)
+                      }
+                }
+                获取this.$store.getters.doneTodo
+5。计算属性与监听器
+    计算属性： computed:{} 计算属性具有缓存功能  当作用的对象状态没有发生改变时，将取上一次的结果，而不会重新执行方法，
+               能够节约资源，这一点普通的函数则不具有此功能，虽然可以用函数实现计算属性的功能，但函数不具有缓存功能，
+               每次调用都会执行方法体
+    监听属性： watch：{// 如果 `question` 发生改变，这个函数就会运行
+                     question: function (newValue, oldValue) {
+                       this.answer = 'Waiting for you to stop typing...'
+                     }}
+               可以监听data中的变量值是否发生变化
+
+
+     watch适合处理的场景是，侦听一个数的变化，当该数据变化，来处理其他与之相关数据的变化（该数据影响别的多个数据）
+     computed适合处理的场景是，获得一个值或者结果，该结果受其他的依赖的影响。
+
+     计算属性可以看做一个方法，里面依赖了组件创建的变量对象，并且必须返回一个结果
+     监听属性是对一个对象监听，对象状态改变可以触发监听中的操作
+
+6.插槽
+    在组件中使用slot  如<template><slot>默认内容</slot></template>  调用此组件时标签内的内容会替换slot 如果没有填写内容
+    将显示默认内容
+
+    具名插槽：
+        插槽模板
+        <div class="container">
+          <header>
+            <slot name="header"></slot>
+          </header>
+          <main>
+            <slot></slot>
+          </main>
+          <footer>
+            <slot name="footer"></slot>
+          </footer>
+        </div>
+        调用
+        <base-layout>
+          <template v-slot:header>
+            <h1>Here might be a page title</h1>
+          </template>
+
+          <p>A paragraph for the main content.</p>
+          <p>And another one.</p>
+
+          <template v-slot:footer>
+            <p>Here's some contact info</p>
+          </template>
+        </base-layout>
+
+        如果没有指定v-slot:值  则会将其余插槽默认加载出来
+        作用域插槽 插槽中<slot say="111" :user="user"></slot>这样写  可以将对象user传递给父组件
+        取法：v-slot:defalut="user"  {{user.params}} {{user.say}}
+
+7.webSocket：
+
+8.http协议以及各个版本区别
+    请求报文：
+        请求行：请求方法,请求url,http版本协议
+        请求头：告诉服务器客户端的编码格式,接收数据的格式,时间,cookie,客户端语言环境,操作系统,浏览器版本等信息
+        请求体：通过http传递给服务器的实体数据,参数信息
+
+    响应报文：
+        响应行：HTTP/1.1  200 OK   （协议的版本号是1.1  响应状态码为200  响应结果为 OK）
+        响应头：告诉浏览器服务器的类型,数据格式,数据长度,数据格式,缓存处理等信息
+        响应头：响应包含浏览器能够解析的静态内容，例如：html，纯文本，图片等等信息
+
+
+移动端适配设置
+<meta name="viewport" content="width=device-width,initial-scale=1,
+minimum-scale=1,maximum-scale=1,user-scalable=no" />
+
+关于promise对象与then关键字的结合：
+  promise的出现解决了传统的函数回调地狱问题,将所要执行的代码块作为一个执行函数,创建一个promise对象去执行这个函数,
+  根据函数逻辑得到相应的结果。
+  then 方法接收两个函数作为参数，第一个参数是 Promise 执行成功时的回调，
+  第二个参数是 Promise 执行失败时的回调，两个函数只会有一个被调用。
+  通过then可以拿到promise回调传递的数据进行下一步处理，而多个then方法的链式调用在实际工作中非常常见，比如两个https请求，
+  其中一个需要上一个请求返回的结果作为参数，会用then方法进行接收执行，但如果两个请求互相不依赖，
+  就不要放到同一个promise函数链中执行，因为当中途出现promise对象状态为失败时，函数链式调用就会中断，
+  then方法不会往下执行，应该将两个请求分开。
